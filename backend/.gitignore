@@ -1,0 +1,5 @@
+node_modules/
+dawalal.db
+dawalal.db-shm
+dawalal.db-wal
+*.log
