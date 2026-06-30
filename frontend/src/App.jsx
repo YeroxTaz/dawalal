@@ -402,11 +402,6 @@ function LoginScreen({ role, onLogin, onBack }) {
           </div>
         )}
         <Btn full onClick={handleLogin} icon="arrowRight">Se connecter</Btn>
-        {role === "candidat" && (
-          <p style={{ textAlign: "center", fontSize: 13.5, color: C.inkSoft, marginBottom: 0, marginTop: 16 }}>
-            Pas encore de compte ? <span style={{ color: C.emerald, fontWeight: 600, cursor: "pointer" }} onClick={handleLogin}>Créer un compte</span>
-          </p>
-        )}
         <div style={{ textAlign: "center", marginTop: 16 }}>
           <Btn variant="ghost" small onClick={onBack}>← Retour à l'accueil</Btn>
         </div>
