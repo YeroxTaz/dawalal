@@ -360,8 +360,19 @@ function HomePage({ onSelectRole }) {
 function LoginScreen({ role, onLogin, onBack }) {
   const labels = { candidat: "Candidat", examinateur: "Examinateur", admin: "Administrateur" };
   const icons = { candidat: "user", examinateur: "clipboard", admin: "settings" };
-  const [pwd, setPwd] = useState(role === "candidat" ? "" : "********");
-  const [identifiant, setIdentifiant] = useState(role === "examinateur" ? "Ibrahima Sow" : "");
+  const [pwd, setPwd] = useState("");
+  const [identifiant, setIdentifiant] = useState("");
+  const [erreur, setErreur] = useState("");
+
+  function handleLogin() {
+    if (!identifiant.trim() || !pwd.trim()) {
+      setErreur("Veuillez renseigner l'identifiant et le mot de passe.");
+      return;
+    }
+    setErreur("");
+    onLogin(pwd, identifiant);
+  }
+
   return (
     <div style={{ minHeight: "100vh", background: `radial-gradient(120% 100% at 50% 0%, ${C.mint} 0%, ${C.bg} 50%)`, fontFamily: FONT, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
       <Card style={{ width: 420, maxWidth: "100%", padding: 34 }}>
@@ -373,21 +384,27 @@ function LoginScreen({ role, onLogin, onBack }) {
           <p style={{ color: C.inkSoft, fontSize: 14, margin: 0 }}>Connectez-vous pour continuer</p>
         </div>
         <Field label={role === "candidat" ? "Nom complet" : "Identifiant"}>
-          <Input placeholder={role === "candidat" ? "ex : Moussa Ndiaye" : "identifiant"} value={identifiant} onChange={(e) => setIdentifiant(e.target.value)} />
+          <Input placeholder={role === "candidat" ? "ex : Moussa Ndiaye" : "identifiant"} value={identifiant} onChange={(e) => { setIdentifiant(e.target.value); setErreur(""); }} />
         </Field>
         <Field label="Mot de passe">
-          <Input type="password" value={pwd} onChange={(e) => setPwd(e.target.value)} placeholder="••••••••" />
+          <Input type="password" value={pwd} onChange={(e) => { setPwd(e.target.value); setErreur(""); }} placeholder="••••••••" />
         </Field>
-        {role === "candidat" && (
+        {erreur && (
+          <div style={{ display: "flex", gap: 9, alignItems: "center", background: C.redSoft, borderRadius: 11, padding: "11px 13px", fontSize: 13, color: C.red, marginBottom: 18, fontWeight: 500 }}>
+            <Icon name="shield" size={16} color={C.red} />
+            <span>{erreur}</span>
+          </div>
+        )}
+        {role === "candidat" && !erreur && (
           <div style={{ display: "flex", gap: 9, alignItems: "flex-start", background: C.mint, borderRadius: 11, padding: "11px 13px", fontSize: 12.5, color: C.green, marginBottom: 18, lineHeight: 1.5 }}>
             <Icon name="shield" size={16} color={C.emerald} />
             <span>Un code de confirmation vous sera envoyé par SMS (OTP).</span>
           </div>
         )}
-        <Btn full onClick={() => onLogin(pwd, identifiant)} icon="arrowRight">Se connecter</Btn>
+        <Btn full onClick={handleLogin} icon="arrowRight">Se connecter</Btn>
         {role === "candidat" && (
           <p style={{ textAlign: "center", fontSize: 13.5, color: C.inkSoft, marginBottom: 0, marginTop: 16 }}>
-            Pas encore de compte ? <span style={{ color: C.emerald, fontWeight: 600, cursor: "pointer" }} onClick={() => onLogin(pwd, identifiant)}>Créer un compte</span>
+            Pas encore de compte ? <span style={{ color: C.emerald, fontWeight: 600, cursor: "pointer" }} onClick={handleLogin}>Créer un compte</span>
           </p>
         )}
         <div style={{ textAlign: "center", marginTop: 16 }}>
@@ -551,11 +568,11 @@ function CandidatDashboard({ userName, monInscription, onNew }) {
       <Card style={{ marginTop: 16, background: `linear-gradient(120% 100% at 0% 0%, ${C.mint}, #fff)`, border: `1px solid ${C.emeraldSoft}` }}>
         <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
           <div style={{ width: 44, height: 44, borderRadius: 12, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: SHADOW_SM }}>
-            <Icon name="bell" size={21} color={C.emerald} />
+            <Icon name={permisDispo ? "award" : "bell"} size={21} color={C.emerald} />
           </div>
           <div>
-            <div style={{ fontWeight: 700, color: C.green, fontSize: 15 }}>Notifications activées</div>
-            <div style={{ fontSize: 13.5, color: C.inkSoft, marginTop: 1 }}>Vous recevrez un SMS à chaque étape importante de votre dossier.</div>
+            <div style={{ fontWeight: 700, color: C.green, fontSize: 15 }}>{permisDispo ? "Permis disponible" : "Notifications activées"}</div>
+            <div style={{ fontSize: 13.5, color: C.inkSoft, marginTop: 1 }}>{permisDispo ? "Vous avez reçu un message vous informant que votre permis est disponible. Vous pouvez désormais vous rendre au centre pour le récupérer." : "Vous recevrez un SMS à chaque étape importante de votre dossier."}</div>
           </div>
         </div>
       </Card>
@@ -569,6 +586,12 @@ function CandidatInscription({ userName, step, setStep, form, setForm, onFinish 
   const parts = (userName || "").trim().split(" ");
   const nomSaisi = parts.length > 1 ? parts.slice(1).join(" ") : "";
   const prenomSaisi = parts[0] || "";
+  const [fichiers, setFichiers] = useState({});
+
+  function handleFichier(piece, e) {
+    const file = e.target.files && e.target.files[0];
+    if (file) setFichiers((prev) => ({ ...prev, [piece]: file.name }));
+  }
 
   return (
     <Card style={{ padding: 30 }}>
@@ -591,15 +614,23 @@ function CandidatInscription({ userName, step, setStep, form, setForm, onFinish 
           <div style={{ marginTop: 6 }}>
             <label style={{ display: "block", fontSize: 13, fontWeight: 600, marginBottom: 10, color: C.ink }}>Pièces justificatives</label>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
-              {["Carte d'identité (CNI)", "Photo d'identité", "Certificat médical"].map((p) => (
-                <div key={p} style={{ border: `1.5px solid ${C.emeraldSoft}`, borderRadius: 14, padding: 18, textAlign: "center", background: C.mint }}>
-                  <div style={{ width: 38, height: 38, borderRadius: 10, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px", boxShadow: SHADOW_SM }}>
-                    <Icon name="upload" size={18} color={C.emerald} />
-                  </div>
-                  <div style={{ fontSize: 12.5, color: C.ink, fontWeight: 600, lineHeight: 1.3 }}>{p}</div>
-                  <div style={{ fontSize: 11.5, color: C.emerald, marginTop: 6, display: "flex", alignItems: "center", justifyContent: "center", gap: 3, fontWeight: 600 }}><Icon name="check" size={13} color={C.emerald} /> Téléversé</div>
-                </div>
-              ))}
+              {["Carte d'identité (CNI)", "Photo d'identité", "Certificat médical"].map((p) => {
+                const nomFichier = fichiers[p];
+                return (
+                  <label key={p} style={{ display: "block", border: `1.5px solid ${nomFichier ? C.emerald : C.emeraldSoft}`, borderRadius: 14, padding: 18, textAlign: "center", background: C.mint, cursor: "pointer", transition: "all .2s" }}>
+                    <input type="file" accept="image/*,.pdf" style={{ display: "none" }} onChange={(e) => handleFichier(p, e)} />
+                    <div style={{ width: 38, height: 38, borderRadius: 10, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px", boxShadow: SHADOW_SM }}>
+                      <Icon name={nomFichier ? "check" : "upload"} size={18} color={C.emerald} />
+                    </div>
+                    <div style={{ fontSize: 12.5, color: C.ink, fontWeight: 600, lineHeight: 1.3 }}>{p}</div>
+                    {nomFichier ? (
+                      <div style={{ fontSize: 11, color: C.emerald, marginTop: 6, fontWeight: 600, wordBreak: "break-all", lineHeight: 1.3 }} title={nomFichier}>{nomFichier.length > 22 ? nomFichier.slice(0, 19) + "..." : nomFichier}</div>
+                    ) : (
+                      <div style={{ fontSize: 11.5, color: C.inkSoft, marginTop: 6, fontWeight: 500 }}>Cliquer pour choisir</div>
+                    )}
+                  </label>
+                );
+              })}
             </div>
           </div>
           <div style={{ marginTop: 26, textAlign: "right" }}><Btn onClick={() => setStep(1)} icon="arrowRight">Continuer</Btn></div>
