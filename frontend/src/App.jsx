@@ -363,6 +363,10 @@ function LoginScreen({ role, onLogin, onBack }) {
   const [pwd, setPwd] = useState("");
   const [identifiant, setIdentifiant] = useState("");
   const [erreur, setErreur] = useState("");
+  const [mode, setMode] = useState("connexion"); // "connexion" ou "inscription"
+
+  // Champs du formulaire de création de compte
+  const [compte, setCompte] = useState({ nom: "", prenom: "", telephone: "", naissance: "", motDePasse: "" });
 
   function handleLogin() {
     if (!identifiant.trim() || !pwd.trim()) {
@@ -373,6 +377,36 @@ function LoginScreen({ role, onLogin, onBack }) {
     onLogin(pwd, identifiant);
   }
 
+  function calculerAge(dateStr) {
+    if (!dateStr) return null;
+    const naissance = new Date(dateStr);
+    const aujourdhui = new Date();
+    let age = aujourdhui.getFullYear() - naissance.getFullYear();
+    const m = aujourdhui.getMonth() - naissance.getMonth();
+    if (m < 0 || (m === 0 && aujourdhui.getDate() < naissance.getDate())) age--;
+    return age;
+  }
+
+  function handleCreerCompte() {
+    if (!compte.nom.trim() || !compte.prenom.trim() || !compte.telephone.trim() || !compte.naissance || !compte.motDePasse.trim()) {
+      setErreur("Veuillez renseigner tous les champs.");
+      return;
+    }
+    const age = calculerAge(compte.naissance);
+    if (age === null || age < 18) {
+      setErreur("Vous n'avez pas l'âge autorisé pour vous inscrire au permis de conduire.");
+      return;
+    }
+    setErreur("");
+    // Connexion avec le nom complet saisi
+    onLogin(compte.motDePasse, `${compte.prenom.trim()} ${compte.nom.trim()}`);
+  }
+
+  function basculerMode(nouveauMode) {
+    setMode(nouveauMode);
+    setErreur("");
+  }
+
   return (
     <div style={{ minHeight: "100vh", background: `radial-gradient(120% 100% at 50% 0%, ${C.mint} 0%, ${C.bg} 50%)`, fontFamily: FONT, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
       <Card style={{ width: 420, maxWidth: "100%", padding: 34 }}>
@@ -380,28 +414,65 @@ function LoginScreen({ role, onLogin, onBack }) {
           <div style={{ width: 56, height: 56, borderRadius: 15, background: `linear-gradient(135deg, ${C.green}, ${C.emerald})`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", boxShadow: "0 6px 18px rgba(22,163,74,0.25)" }}>
             <Icon name={icons[role]} size={26} color="#fff" />
           </div>
-          <h2 style={{ fontSize: 23, color: C.ink, margin: "0 0 4px", fontWeight: 700, letterSpacing: -0.4 }}>Espace {labels[role]}</h2>
-          <p style={{ color: C.inkSoft, fontSize: 14, margin: 0 }}>Connectez-vous pour continuer</p>
+          <h2 style={{ fontSize: 23, color: C.ink, margin: "0 0 4px", fontWeight: 700, letterSpacing: -0.4 }}>
+            {mode === "inscription" ? "Créer un compte" : `Espace ${labels[role]}`}
+          </h2>
+          <p style={{ color: C.inkSoft, fontSize: 14, margin: 0 }}>
+            {mode === "inscription" ? "Renseignez vos informations" : "Connectez-vous pour continuer"}
+          </p>
         </div>
-        <Field label={role === "candidat" ? "Nom complet" : "Identifiant"}>
-          <Input placeholder={role === "candidat" ? "ex : Moussa Ndiaye" : "identifiant"} value={identifiant} onChange={(e) => { setIdentifiant(e.target.value); setErreur(""); }} />
-        </Field>
-        <Field label="Mot de passe">
-          <Input type="password" value={pwd} onChange={(e) => { setPwd(e.target.value); setErreur(""); }} placeholder="••••••••" />
-        </Field>
+
+        {mode === "connexion" && (
+          <>
+            <Field label={role === "candidat" ? "Nom complet" : "Identifiant"}>
+              <Input placeholder={role === "candidat" ? "ex : Moussa Ndiaye" : "identifiant"} value={identifiant} onChange={(e) => { setIdentifiant(e.target.value); setErreur(""); }} />
+            </Field>
+            <Field label="Mot de passe">
+              <Input type="password" value={pwd} onChange={(e) => { setPwd(e.target.value); setErreur(""); }} placeholder="••••••••" />
+            </Field>
+          </>
+        )}
+
+        {mode === "inscription" && (
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <Field label="Prénom"><Input placeholder="Moussa" value={compte.prenom} onChange={(e) => { setCompte({ ...compte, prenom: e.target.value }); setErreur(""); }} /></Field>
+              <Field label="Nom"><Input placeholder="Ndiaye" value={compte.nom} onChange={(e) => { setCompte({ ...compte, nom: e.target.value }); setErreur(""); }} /></Field>
+            </div>
+            <Field label="Téléphone"><Input placeholder="+221 77 123 45 67" value={compte.telephone} onChange={(e) => { setCompte({ ...compte, telephone: e.target.value }); setErreur(""); }} /></Field>
+            <Field label="Date de naissance"><Input type="date" value={compte.naissance} onChange={(e) => { setCompte({ ...compte, naissance: e.target.value }); setErreur(""); }} /></Field>
+            <Field label="Mot de passe"><Input type="password" placeholder="••••••••" value={compte.motDePasse} onChange={(e) => { setCompte({ ...compte, motDePasse: e.target.value }); setErreur(""); }} /></Field>
+          </>
+        )}
+
         {erreur && (
-          <div style={{ display: "flex", gap: 9, alignItems: "center", background: C.redSoft, borderRadius: 11, padding: "11px 13px", fontSize: 13, color: C.red, marginBottom: 18, fontWeight: 500 }}>
+          <div style={{ display: "flex", gap: 9, alignItems: "center", background: C.redSoft, borderRadius: 11, padding: "11px 13px", fontSize: 13, color: C.red, marginBottom: 18, fontWeight: 500, lineHeight: 1.4 }}>
             <Icon name="shield" size={16} color={C.red} />
             <span>{erreur}</span>
           </div>
         )}
-        {role === "candidat" && !erreur && (
+        {role === "candidat" && mode === "connexion" && !erreur && (
           <div style={{ display: "flex", gap: 9, alignItems: "flex-start", background: C.mint, borderRadius: 11, padding: "11px 13px", fontSize: 12.5, color: C.green, marginBottom: 18, lineHeight: 1.5 }}>
             <Icon name="shield" size={16} color={C.emerald} />
             <span>Un code de confirmation vous sera envoyé par SMS (OTP).</span>
           </div>
         )}
-        <Btn full onClick={handleLogin} icon="arrowRight">Se connecter</Btn>
+
+        {mode === "connexion" ? (
+          <Btn full onClick={handleLogin} icon="arrowRight">Se connecter</Btn>
+        ) : (
+          <Btn full onClick={handleCreerCompte} icon="arrowRight">Créer mon compte</Btn>
+        )}
+
+        {role === "candidat" && (
+          <p style={{ textAlign: "center", fontSize: 13.5, color: C.inkSoft, marginBottom: 0, marginTop: 16 }}>
+            {mode === "connexion" ? (
+              <>Pas encore de compte ? <span style={{ color: C.emerald, fontWeight: 600, cursor: "pointer" }} onClick={() => basculerMode("inscription")}>Créer un compte</span></>
+            ) : (
+              <>Déjà un compte ? <span style={{ color: C.emerald, fontWeight: 600, cursor: "pointer" }} onClick={() => basculerMode("connexion")}>Se connecter</span></>
+            )}
+          </p>
+        )}
         <div style={{ textAlign: "center", marginTop: 16 }}>
           <Btn variant="ghost" small onClick={onBack}>← Retour à l'accueil</Btn>
         </div>
