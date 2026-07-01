@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import logoDawalal from "./assets/logo-dawalal.png";
 
 // ============================================================
 //  DAWALAL - Plateforme de gestion des examens de conduite
@@ -225,8 +226,9 @@ function Logo({ size = 26, light }) {
         display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
         boxShadow: light ? "none" : "0 4px 12px rgba(22,163,74,0.25)",
         border: light ? "1px solid rgba(255,255,255,0.3)" : "none",
+        overflow: "hidden",
       }}>
-        <span style={{ color: "#fff", fontWeight: 800, fontSize: size - 4, letterSpacing: -1 }}>D</span>
+        <img src={logoDawalal} alt="DAWALAL" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
       </div>
       <span style={{ fontWeight: 800, fontSize: size, color: light ? "#fff" : C.green, letterSpacing: -0.8 }}>DAWALAL</span>
     </div>
